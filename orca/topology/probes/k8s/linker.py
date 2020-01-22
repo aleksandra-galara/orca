@@ -1,11 +1,6 @@
 from orca.topology.probes import linker
 
 
-class Linker(linker.Linker):
-
-    """Base class for Kubernetes entity linkers."""
-
-
 class Matcher(linker.Matcher):
 
     def _match_namespace(self, node_a, node_b):

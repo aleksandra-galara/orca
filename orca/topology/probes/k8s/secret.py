@@ -1,24 +1,5 @@
-from orca.common import logger
-from orca.k8s import client as k8s_client
-from orca.topology.probes import fetcher
 from orca.topology.probes.k8s import extractor
-from orca.topology.probes.k8s import linker, probe
-from orca.topology.probes.k8s import synchronizer as k8s_sync
-
-log = logger.get_logger(__name__)
-
-
-class SecretProbe(probe.Probe):
-
-    @staticmethod
-    def create(graph, client):
-        extractor = SecretExtractor()
-        synchronizer = k8s_sync.SynchronizerFactory.get_synchronizer(
-            graph, client, 'secret', extractor)
-        handler = probe.KubeHandler(graph, extractor)
-        watcher = k8s_client.ResourceWatch(client.CoreV1Api(), 'secret')
-        watcher.add_handler(handler)
-        return SecretProbe('secret', synchronizer, watcher)
+from orca.topology.probes.k8s import linker
 
 
 class SecretExtractor(extractor.Extractor):
@@ -31,16 +12,6 @@ class SecretExtractor(extractor.Extractor):
         properties['name'] = entity.metadata.name
         properties['namespace'] = entity.metadata.namespace
         return properties
-
-
-class SecretToPodLinker(linker.Linker):
-
-    @staticmethod
-    def create(graph, client):
-        fetcher_a = fetcher.GraphFetcher(graph, 'secret')
-        fetcher_b = fetcher.GraphFetcher(graph, 'pod')
-        matcher = SecretToPodMatcher()
-        return SecretToPodLinker(graph, 'secret', fetcher_a, 'pod', fetcher_b, matcher)
 
 
 class SecretToPodMatcher(linker.Matcher):

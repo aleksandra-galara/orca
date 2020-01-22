@@ -1,24 +1,6 @@
-from orca.common import logger, str_utils
-from orca.k8s import client as k8s_client
-from orca.topology.probes import fetcher
-from orca.topology.probes.k8s import synchronizer as k8s_sync
+from orca.common import str_utils
 from orca.topology.probes.k8s import extractor
-from orca.topology.probes.k8s import linker, probe
-
-log = logger.get_logger(__name__)
-
-
-class PodProbe(probe.Probe):
-
-    @staticmethod
-    def create(graph, client):
-        extractor = PodExtractor()
-        synchronizer = k8s_sync.SynchronizerFactory.get_synchronizer(
-            graph, client, 'pod', extractor)
-        handler = probe.KubeHandler(graph, extractor)
-        watcher = k8s_client.ResourceWatch(client.CoreV1Api(), 'pod')
-        watcher.add_handler(handler)
-        return PodProbe('pod', synchronizer, watcher)
+from orca.topology.probes.k8s import linker
 
 
 class PodExtractor(extractor.Extractor):
@@ -80,16 +62,6 @@ class PodExtractor(extractor.Extractor):
         return volumes
 
 
-class PodToServiceLinker(linker.Linker):
-
-    @staticmethod
-    def create(graph, client):
-        fetcher_a = fetcher.GraphFetcher(graph, 'pod')
-        fetcher_b = fetcher.GraphFetcher(graph, 'service')
-        matcher = PodToServiceMatcher()
-        return PodToServiceLinker(graph, 'pod', fetcher_a, 'service', fetcher_b, matcher)
-
-
 class PodToServiceMatcher(linker.Matcher):
 
     def are_linked(self, pod, service):
@@ -98,33 +70,12 @@ class PodToServiceMatcher(linker.Matcher):
         return match_namespace and match_selector
 
 
-class PodToReplicaSetLinker(linker.Linker):
-
-    @staticmethod
-    def create(graph, client):
-        fetcher_a = fetcher.GraphFetcher(graph, 'pod')
-        fetcher_b = fetcher.GraphFetcher(graph, 'replica_set')
-        matcher = PodToReplicaSetMatcher()
-        return PodToReplicaSetLinker(
-            graph, 'pod', fetcher_a, 'replica_set', fetcher_b, matcher)
-
-
 class PodToReplicaSetMatcher(linker.Matcher):
 
     def are_linked(self, pod, replica_set):
         match_namespace = self._match_namespace(pod, replica_set)
         match_selector = self._match_selector(pod, replica_set.properties.selector)
         return match_namespace and match_selector
-
-
-class PodToNodeLinker(linker.Linker):
-
-    @staticmethod
-    def create(graph, client):
-        fetcher_a = fetcher.GraphFetcher(graph, 'pod')
-        fetcher_b = fetcher.GraphFetcher(graph, 'node')
-        matcher = PodToNodeMatcher()
-        return PodToNodeLinker(graph, 'pod', fetcher_a, 'node', fetcher_b, matcher)
 
 
 class PodToNodeMatcher(linker.Matcher):
