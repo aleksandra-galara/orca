@@ -1,10 +1,8 @@
+from orca.topology import manager
 from orca.topology.alerts import probe
 
 
-def initialize_probes(graph):
-    return [
-        probe.Probe(graph=graph, origin='falco', kind='alert')]
+class ProbeManager(manager.ProbeManager):
 
-
-def initialize_linkers(graph):
-    return []
+    def initialize_probes(self):
+        return [probe.Probe(graph=self._graph, origin='falco', kind='alert')]
